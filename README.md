@@ -1,4 +1,4 @@
-# :star2:Ames Housing Prices : Directed Exploratory Data Analysis:star2:
+# :star2:Titanic Dataset : Guided Predictive Learning with Logistic Regression:star2:
 
 This work contains guided predictive analysis of the legendary Titanic dataset, downloaded from Kaggle. The term "guided" refers to the fact that there are steps and assumptions that have been predetermined before by my supervisor at dibimbing.id, who later commented my work being "*very impressive*" . This analysis however is carried out in R (Rstudio).
 
