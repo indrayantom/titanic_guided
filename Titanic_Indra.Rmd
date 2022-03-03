@@ -1,0 +1,228 @@
+---
+title: 'Titanic Dataset : Exploring Machine Learning Models with R'
+author: "Indra Yanto"
+date: "12/19/2021"
+output:
+  html_document:
+    df_print: paged
+  
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 0. Setting the work environment
+Install all the libraries needed :
+```{r,warning=FALSE,message=FALSE}
+library(tidyverse) #Data manipulation
+library(caret) #Data preprocessing and evaluation metrics
+library(GGally) #Extension of ggplot to draw pairplot
+library(psych) #Another library to draw pairplot
+library(caTools)
+```
+
+Import the Titanic Dataset :
+```{r}
+df = read.csv('https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv')
+df
+```
+Titanic dataset is the legendary dataset which contains demographic and traveling information of some Titanic passengers, and the goal is to predict the survival of these passengers. The accident happened in 1912 when the ship RMS Titanic struck an iceberg on its maiden voyage and sank, resulting in the deaths of most of its passengers and crew.  
+
+From above sample of the RMS Titanic data, one can see various features present for each passenger on the ship:
+
+- PassengerId : Unique id of each passenger
+- Survived: Outcome of survival (0 = No; 1 = Yes)
+- Pclass: Socio-economic class (1 = Upper class; 2 = Middle class; 3 = Lower class)
+- Name: Name of passenger
+- Sex: Sex of the passenger
+- Age: Age of the passenger (Some entries contain NaN)
+- SibSp: Number of siblings and spouses of the passenger aboard
+- Parch: Number of parents and children of the passenger aboard
+- Ticket: Ticket number of the passenger
+- Fare: Fare paid by the passenger
+- Cabin Cabin number of the passenger (Some entries contain NaN)
+- Embarked: Port of embarkation of the passenger (C = Cherbourg; Q = Queenstown; S = Southampton)
+
+First, let's investigate stat descriptive parameter and data types of each feature within the data
+```{r}
+glimpse(df)
+```
+```{r}
+summary(df)
+```
+```{r}
+colSums(is.na(df))
+```
+Following a quick investigation, we discover that the only variable with missing values is Age. However, a closer examination of the data reveals that Cabin also has 687 missing values, which are represented by the " character. As a result, we'll remove all rows with missing Age and drop the Cabin column. The PassengerId column will be removed as well, as it provides no useful information.
+
+```{r}
+nrow(df[df$Cabin=='',])
+```
+
+Quick data cleaning :
+```{r}
+df = df %>% select(-c(PassengerId,Cabin))
+df=df[complete.cases(df),]
+df_ori=df #save the original dataframe
+df
+```
+
+## 1. Import the data and do quick analysis for these variables : Sex, Age dan Pclass. Is it good to use them as a predictor for the target variable?
+
+Before doing the analysis, it's better for us to know the proportion of survived passengers in the sample data. From the bar plot below, it is evident that roughly 40% passengers or 300 passengers are survived.
+
+```{r}
+df %>% count(Survived=factor(Survived)) %>% mutate(prop=prop.table(n)) %>% ggplot(aes(x=Survived,y=n,label=paste(round(prop*100,2),'%')))+geom_bar(stat='identity',fill='#F8766D')+geom_text(position = position_dodge(width = .9),vjust = -0.5,size = 4)+theme_minimal()+labs(title='Count of Survived Passengers',subtitle='Survived Passengers represented by 1',y='count')+ylim(0,500)
+```
+
+Now, we can analyze the highlighted variables i.e : Sex, Pclass, and Age. In order to make the plotting process easier, let's transform the data type of Survived, Pclass, and Sex become factor (numerical into categorical).
+```{r}
+# Factor the categorical variable Survived, Pclass, and Sex to make the plotting process easier
+df$Survived=factor(df$Survived)
+df$Pclass=factor(df$Pclass)
+df$Sex=factor(df$Sex)
+```
+
+**Age**
+```{r,fig.width=8,fig.height=4,warning=FALSE,message=FALSE}
+library(patchwork)
+p1=ggplot(df,aes(x=Age,fill=Survived))+geom_histogram()+theme_minimal()+labs(title='Histogram of Survived vs Age')
+p2=ggplot(df,aes(x=Survived,y=Age))+geom_boxplot()+theme_minimal()+labs(title='Boxplot of Survived vs Age')
+p3=p1+p2+plot_annotation(caption = 'Survived passengers represented by 1')
+p3
+```
+
+At glance, the age distributions of 1 and 0 Survived Passengers are nearly identical, hence Age may not be a good predictor of Survived. However, a closer examination of the histogram reveals that passengers with age roughly 0-8 years (kids) do have higher survival chance than others.
+
+```{r}
+p1 = df %>% ggplot(aes(x=cut_interval(Age,length = 8)))+geom_bar(stat='count',fill='#F8766D')+theme_minimal()
+p2 = df %>% ggplot(aes(x=cut_interval(Age,length = 8)))+geom_bar(stat='count',position = 'fill',aes(fill=Survived))+scale_y_continuous(labels = scales::percent)+theme_minimal()+labs(y='Survived Percentage')
+p=p1/p2+plot_annotation(title='Age Binning with length=8',subtitle = 'Childs have relatively bigger probability to survive')
+ggsave('age_bin.jpg',p,dpi=1000,width=9,height=6)
+print(p)
+```
+
+**Sex**
+```{r}
+p1 = df %>% ggplot(aes(x=Sex))+geom_bar(stat='count',fill='#F8766D')+theme_minimal()
+p2 = df %>% ggplot(aes(x=Sex))+geom_bar(stat='count',position = 'fill',aes(fill=Survived))+ scale_y_continuous(labels = scales::percent)+theme_minimal()+labs(y='Survived Percentage')
+p1+p2+plot_annotation(title='Count of Survived vs Sex',subtitle='Survived passengers represented by 1')
+```
+
+The stacked bar plot shows that Sex or Gender may comes as good predictor for Survived variable as female passengers have survival probability around 75%, about 3 times bigger than male passengers.
+
+**Pclass**
+```{r}
+p1 = df %>% ggplot(aes(x=Pclass))+geom_bar(stat='count',fill='#F8766D')+theme_minimal()
+p2 = df %>% ggplot(aes(x=Pclass))+geom_bar(stat='count',position = 'fill',aes(fill=Survived))+ scale_y_continuous(labels = scales::percent)+theme_minimal()+labs(y='Survived Percentage')
+p1+p2+plot_annotation(title='Count of Survived vs Pclass',subtitle='Survived passengers represented by 1')
+```
+
+The same conclusion can be drawn for the Pclass variable since the bar plot shows that the probability of survival decreases as the Pclass increases (remember that Pclass 1 indicates upper class and Pclass 3 indicates lower class ).
+
+
+Lastly, I will plot the correlation and value distribution of each feature with the pairplot. However, we have to conduct some feature engineerings beforehand. Name and Ticket columns first will be dropped since their data types are character meanwhile Sex and Embarked will be one-hot encoded. Please note that Embarked actually still has 2 rows with empty string values thus they will be imputed with 'S', the majority value. 
+```{r}
+df_ori=df_ori %>% mutate(Embarked=replace(Embarked,Embarked=='','S')) #There are 2 empty string values in Embarked
+df_ori$Sex = ifelse(df_ori$Sex=='male',1,0) #1 for male and 0 for female
+df_ori=df_ori %>% mutate(Embarked_Q=ifelse(Embarked=='Q',1,0),Embarked_S=ifelse(Embarked=='S',1,0)) #Embarked will be encoded to Embarked_S and Embarked_Q only to avoid multicollinearity
+df_ori = df_ori %>% select(-c(Name,Ticket,Embarked))
+df_ori
+```
+
+Only numerical features do exist within the dataset
+
+```{r}
+glimpse(df_ori)
+```
+Draw the pairplot and determine the spearman correlation for each feature.
+```{r,fig.width=12,fig.height=12}
+pairs.panels(df_ori,smooth = TRUE,density = TRUE,ellipses = TRUE,method='spearman') #based on my literature study, spearman is more suitable for data that has categorical feature
+```
+
+The pairplot appears to support our previous hypotheses, as it shows that Sex and Pclass are the two variables with the highest absolute correlation values to Survived among all columns. As expected, Age is also shown to have such a low correlation value to the target variable.
+
+To summarize the findings, **Pclass and Sex have the potential to be good predictors of the Survived variable. However, given that the Age distributions for both 1 and 0 Survived Passengers are roughly similar, Age may not have the same impact on Survived as Pclass and Age. It does provide an important information though that passengers under the age of eight have a better chance of survival**.
+
+
+## 2. Transform the categorical variables into factor variables! Also, split the data with 0.85 ratio into training and test. Use it with set.seed(2233)
+
+The only variable we need to transform to do the predictive learning is the target variable, i.e Survived. Remember that Sex and Embarked are already encoded. Also, Pclass will be left as it is since it's considered as ordinal variable.
+
+```{r}
+df_ori$Survived=factor(df_ori$Survived)
+```
+
+Split the data into training and test data with 85% ratio
+```{r}
+set.seed(2233)
+data_split=sample.split(df_ori$Survived,SplitRatio = 0.85)
+train_df=subset(df_ori,data_split==TRUE)
+test_df=subset(df_ori,data_split==FALSE)
+```
+
+As the result, right now we have train_df with 606 observations and test_df with 108
+observations.
+```{r}
+train_df
+```
+```{r}
+test_df
+```
+
+## 3. Build the logistic regression model to predict the Survived variable by using Age, Pclass and Sex . Use threshold = 0.5 and evaluate your model whether it gives such a good result.
+
+Select Survived, Age, Pclass, and Sex columns :
+```{r}
+train_df_filtered=train_df %>% select(Survived,Pclass,Age,Sex)
+test_df_filtered=test_df %>% select(Survived,Pclass,Age,Sex)
+```
+
+Build the logistic regression model. Fit the models into train data:
+```{r}
+model_logit=glm(Survived~.,train_df_filtered,family='binomial')
+summary(model_logit)
+```
+Predict the test data and evaluate it:
+```{r}
+y_predict_logit=predict(model_logit,test_df_filtered,type='response')
+y_predict_logit_prob=factor(ifelse(y_predict_logit>=0.5,1,0))
+caret::confusionMatrix(y_predict_logit_prob,test_df_filtered$Survived,positive='1')
+```
+
+The confusion matrix shows that our model performs well, with an accuracy of about 83 percent. However, because the model was trained on data with a small number of observations, I believe the model's accuracy may decreases if it is applied to test data with a larger number of observations. Another point to mention is that the model appears to be better at predicting passengers who did not survive. According to the confusion matrix, the model correctly guesses 56/64 (87.5 %) passengers who did not survive, which is considered better than guessing the survived passengers with 34/44 correct answers (77 %). The reason for this deficiency may comes from the imbalances distribution of the target variable: Survived itself, that makes our model has more resources on learning the passengers who did not survive and becomes slightly biased.
+
+
+## 4. Analyze the mistakes of your model!
+
+Based on our data analysis in Question no.1 , we know that :
+
+- Male passengers have smaller survival probability ,i.e three times less than female 
+- Passengers with Pclass=3 have the smallest survival probability compared to other Pclass, meanwhile Pclass=1 have the highest.
+- Age does not affect the survival probability that much.
+
+Our model absolutely uses these patterns, that's why based on this table, one can see that male and lower-class passengers have the lowest chance of survival.
+```{r}
+test_df_filtered=test_df_filtered %>% mutate(Survive_Predict=y_predict_logit_prob,.after=Survived) %>% mutate(Survive_Prob=y_predict_logit,.after=Survive_Predict)
+test_df_filtered %>% filter(Survived==0&Survived==Survive_Predict) %>% arrange((Survive_Prob))
+```
+
+However, let's face it, every data set, including ours, contains noise. Of course, there are male and lower-class passengers who did survive and there is huge possibility that our model will predict these observations incorrectly.
+```{r}
+test_df_filtered %>% filter(Survived==1&Survived!=Survive_Predict) %>% arrange(Survive_Prob) %>% head(5)
+```
+The above table is created to emphasize the noise. According to the table, our model predicts that certain lower-class and male passengers have a low chance of survival, but in reality, they did survive.
+
+To summarize the findings, I believe it is normal for our model to make errors because noise exists in every dataset. Furthermore, the small number of observations in the train data, combined with the small number of columns we used, raises the possibility of an oversimplified or highly biased model. To improve the results, we can include more observations and columns with significant effects on the target variable, Survived. Also, think about whether removing the missing age values is really a good idea? Or perhaps, we can improve the result by keeping them and imputing them (number of observations will not decrease) based on another columns, e.g the passenger name's title? Hopefully, I'll be able to answer this question in future works.
+
+
+
+
+
+
+
+
+
+
+
