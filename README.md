@@ -5,7 +5,7 @@ This work contains guided predictive analysis of the legendary Titanic dataset, 
 ![ide](https://img.shields.io/badge/RStudio-75AADB?style=for-the-badge&logo=RStudio&logoColor=white)
 ![kaggle](https://img.shields.io/badge/Kaggle-20BEFF?style=for-the-badge&logo=Kaggle&logoColor=white)
 
-Just in case you didn't know. The codes are contained in the .Rmd (Rmarkdown) file, whereas the results and codes are neatly combined in the .html file (knitted version of Rmarkdown). Feel free to download and open it [here](https://indrayantom.github.io/ames_directedDEA/) 😃😉.
+Just in case you didn't know. The codes are contained in the .Rmd (Rmarkdown) file, whereas the results and codes are neatly combined in the .html file (knitted version of Rmarkdown). Feel free to download and open it [here](https://indrayantom.github.io/titanic_guided/) 😃😉.
 
 ## Objectives
 Titanic dataset is the legendary dataset which contains demographic and traveling information of some Titanic passengers, and the goal is to predict the survival of these passengers. The accident happened in 1912 when the ship RMS Titanic struck an iceberg on its maiden voyage and sank, resulting in the deaths of most of its passengers and crew.  The problems that have to be answered in this work consist of:
