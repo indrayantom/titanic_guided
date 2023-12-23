@@ -1,6 +1,6 @@
 # :star2:Titanic Dataset : Guided Predictive Learning with Logistic Regression:star2:
 
-This work contains guided predictive analysis of the legendary Titanic dataset, downloaded from Kaggle. The term "guided" refers to the fact that there are steps and assumptions that have been predetermined before by my supervisor at dibimbing.id, who later commented my work being "*very impressive*" . This analysis however is carried out in R (Rstudio).
+This work contains guided predictive analysis of the legendary Titanic dataset, downloaded from Kaggle. The term "guided" refers to the fact that there are steps and assumptions that have been predetermined before by my supervisor at dibimbing.id, who is later also the one who reviewed this assignment . This analysis however is carried out in R (Rstudio).
 
 ![ide](https://img.shields.io/badge/RStudio-75AADB?style=for-the-badge&logo=RStudio&logoColor=white)
 ![kaggle](https://img.shields.io/badge/Kaggle-20BEFF?style=for-the-badge&logo=Kaggle&logoColor=white)
